@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://mercadolivrestz123-hue.github.io/sitemap.xml
