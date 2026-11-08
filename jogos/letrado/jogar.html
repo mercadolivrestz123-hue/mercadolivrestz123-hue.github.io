@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><link rel="canonical" href="https://mercadolivrestz123-hue.github.io/jogos/letrado/">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="theme-color" content="#0d1416" />
+<title>LETRADO · Adivinhe a palavra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400&display=swap" />
+<!--
+  Para ativar os anúncios do Google AdSense (Ad Placement API):
+  1. Remova os comentários da tag abaixo.
+  2. Troque ca-pub-XXXXXXXXXXXXXXXX pelo seu ID de editor.
+  3. Remova data-adbreak-test="on" quando for publicar o jogo.
+<script async data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-adbreak-test="on" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+-->
+<script>
+window.adsbygoogle=window.adsbygoogle||[];var adBreak=adConfig=function(o){adsbygoogle.push(o);};
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0d1416;--panel:#152024;--line:#2a3a3f;--text:#eef4f3;--dim:#93a6a8;--green:#0b7d69;--green-text:#3fd1b4;--amber:#e0a526;--gray:#3a4649;--key:#5a6b6f;--r:12px}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:Geist,system-ui,sans-serif;touch-action:manipulation;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
+button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulation}
+.app{max-width:500px;margin:0 auto;height:100%;display:flex;flex-direction:column}
+.screen{display:none;flex:1;flex-direction:column;min-height:0}
+.screen.on{display:flex}
+/* start */
+#start{align-items:center;justify-content:center;padding:24px 20px;gap:20px;text-align:center}
+.logo{display:flex;gap:6px}
+.logo span{width:46px;height:46px;display:grid;place-items:center;font-weight:600;font-size:26px;border-radius:8px;background:var(--gray)}
+.logo span:nth-child(2n+1){background:var(--green)}.logo span:nth-child(3),.logo span:nth-child(6){background:var(--amber);color:#1b1404}
+.how{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;font-size:14px;line-height:1.5;color:var(--dim);text-align:left;max-width:360px}
+.how b{color:var(--text)}
+.how .sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;max-width:360px}
+.stats div{display:flex;flex-direction:column;align-items:center}
+.stats b{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
+.stats small{font-size:12px;color:var(--dim)}
+.big{background:var(--green);color:#fff;font-weight:600;font-size:18px;letter-spacing:.06em;padding:14px 44px;border-radius:999px;min-height:48px}
+.big:active{transform:scale(.97)}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:999px;padding:10px 18px;font-size:14px;min-height:44px}
+.copy{font-size:12px;color:var(--dim)}
+/* game */
+header{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--line)}
+header h1{font-size:22px;letter-spacing:.12em;font-weight:600}
+header .grp{display:flex;gap:6px;align-items:center}
+.ib{min-width:44px;height:44px;border-radius:10px;background:var(--panel);border:1px solid var(--line);font-size:14px;padding:0 10px}
+.ib:disabled{opacity:.4;cursor:default}
+#hintBtn{color:var(--amber);font-weight:600}
+.streak{font-size:12px;color:var(--dim);text-align:center;padding:6px 0 0}
+.streak b{color:var(--amber)}
+.hints{display:flex;justify-content:center;gap:6px;min-height:26px;padding:4px}
+.hints span{width:22px;height:22px;border-radius:5px;border:1px dashed var(--line);font-size:13px;font-weight:600;display:grid;place-items:center;color:var(--dim)}
+.hints span.got{border:1px solid var(--green-text);color:var(--green-text)}
+.boardwrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:4px 10px}
+.board{display:grid;grid-template-rows:repeat(6,1fr);gap:6px;height:100%;max-height:400px;aspect-ratio:5/6}
+.row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.row.shake{animation:shake .4s}
+.tile{border:2px solid var(--line);border-radius:8px;display:grid;place-items:center;font-size:clamp(20px,6vh,32px);font-weight:600;text-transform:uppercase}
+.tile.filled{border-color:var(--key);animation:pop .1s}
+.tile.flip{animation:flip .5s ease forwards}
+.tile.c{background:var(--green);border-color:var(--green);color:#fff}
+.tile.p{background:var(--amber);border-color:var(--amber);color:#1b1404}
+.tile.a{background:var(--gray);border-color:var(--gray);color:#cdd6d7}
+.tile.win{animation:bounce .5s ease}
+@keyframes flip{0%{transform:rotateX(0)}50%{transform:rotateX(90deg)}100%{transform:rotateX(0)}}
+@keyframes pop{50%{transform:scale(1.08)}}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+@keyframes bounce{40%{transform:translateY(-14px)}}
+.kb{padding:6px 4px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px}
+.kr{display:flex;gap:5px;justify-content:center}
+.k{flex:1;max-width:44px;height:54px;border-radius:7px;background:var(--key);font-weight:600;font-size:16px;display:grid;place-items:center}
+.k.w{max-width:66px;flex:1.5;font-size:12px}
+.k.c{background:var(--green)}.k.p{background:var(--amber);color:#1b1404}.k.a{background:#253033;color:#7d8c8e}
+.k:active{filter:brightness(1.2)}
+/* overlay */
+.ov{position:fixed;inset:0;background:rgba(5,10,11,.72);display:none;align-items:center;justify-content:center;padding:20px;z-index:20}
+.ov.on{display:flex}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;width:100%;max-width:360px;text-align:center;display:flex;flex-direction:column;gap:14px;animation:pop .25s}
+.card h2{font-size:24px}
+.word{font-size:28px;letter-spacing:.2em;font-weight:600;color:var(--green-text)}
+.word.lose{color:var(--amber)}
+.dist{display:flex;flex-direction:column;gap:4px;text-align:left}
+.dist div{display:flex;align-items:center;gap:6px;font-size:13px}
+.dist i{font-style:normal;width:12px;color:var(--dim)}
+.dist span{background:var(--gray);padding:2px 8px;border-radius:4px;min-width:24px;text-align:right;font-weight:600;transition:width .5s}
+.dist span.cur{background:var(--green)}
+.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:30}
+.toast.on{opacity:1}
+.cf{position:fixed;top:-12px;width:9px;height:14px;z-index:40;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+@media (prefers-reduced-motion:reduce){.tile.flip,.tile.win,.row.shake,.cf{animation-duration:.01s}}
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="screen on" id="start">
+    <div class="logo" aria-label="LETRADO"><span>L</span><span>E</span><span>T</span><span>R</span><span>A</span><span>D</span><span>O</span></div>
+    <div class="how">
+      <p>Descubra a <b>palavra de 5 letras</b> em <b>6 tentativas</b>. Depois de cada palpite, as cores mostram o quanto você chegou perto:</p>
+      <p style="margin-top:8px"><span class="sw" style="background:var(--green)"></span><b>Verde</b>: letra certa no lugar certo<br>
+      <span class="sw" style="background:var(--amber)"></span><b>Amarelo</b>: a letra existe em outro lugar<br>
+      <span class="sw" style="background:var(--gray)"></span><b>Cinza</b>: a letra não está na palavra</p>
+      <p style="margin-top:8px">Sem acentos. Uma <b>DICA</b> por rodada revela uma letra.</p>
+    </div>
+    <div class="stats">
+      <div><b id="sGames">0</b><small>jogos</small></div>
+      <div><b id="sPct">0</b><small>% vitórias</small></div>
+      <div><b id="sStreak">0</b><small>sequência</small></div>
+      <div><b id="sBest">0</b><small>melhor seq.</small></div>
+    </div>
+    <button class="big" id="playBtn">JOGAR</button>
+    <button class="ghost" id="soundBtn1">🔊 Som ligado</button>
+    <p class="copy">© 2026 Órbita Jogos</p>
+  </section>
+
+  <section class="screen" id="game">
+    <header>
+      <button class="ib" id="homeBtn" aria-label="Início">⌂</button>
+      <h1>LETRADO</h1>
+      <div class="grp">
+        <button class="ib" id="hintBtn" aria-label="Dica">💡 DICA</button>
+        <button class="ib" id="soundBtn2" aria-label="Som">🔊</button>
+      </div>
+    </header>
+    <p class="streak">Sequência: <b id="gStreak">0</b></p>
+    <div class="hints" id="hints" aria-label="Dicas reveladas"></div>
+    <div class="boardwrap"><div class="board" id="board"></div></div>
+    <div class="kb" id="kb"></div>
+  </section>
+</div>
+
+<div class="ov" id="end">
+  <div class="card">
+    <h2 id="endTitle">Parabéns!</h2>
+    <p style="color:var(--dim);font-size:14px" id="endSub">A palavra era</p>
+    <p class="word" id="endWord">AMIGO</p>
+    <div class="stats">
+      <div><b id="eGames">0</b><small>jogos</small></div>
+      <div><b id="ePct">0</b><small>% vitórias</small></div>
+      <div><b id="eStreak">0</b><small>sequência</small></div>
+      <div><b id="eBest">0</b><small>melhor seq.</small></div>
+    </div>
+    <p style="font-size:13px;color:var(--dim);text-align:left">Distribuição de palpites</p>
+    <div class="dist" id="dist"></div>
+    <button class="big" id="nextBtn">PRÓXIMA PALAVRA</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+var WORDS=Array.from(new Set(("AMIGO PRAIA LIMAO CASAL TEMPO MUNDO FESTA PEDRA LIVRO CARRO NOITE TARDE SONHO PORTA PLANO CAMPO VERDE NUVEM CHUVA FOLHA FRUTA PEIXE CARNE LEITE AREIA BARCO BOLSA BANCO CAIXA CANTO CERTO CHAVE CINCO CLIMA CORPO CURSO DENTE DISCO DUPLA FALTA FATIA FERRO FILHO FINAL FOGAO FORCA FORMA FORNO FRASE FRITO GENTE GOLPE GRAMA GRUPO HOTEL IDEIA IGUAL JANTA JEITO JOGAR JOVEM JUNTO LAGOA LARGO LETRA LINHA LISTA LONGE LOUCO LUGAR MACIO MAGRO MAIOR MANGA MARCA MASSA MELAO MENOR MENTE METRO MILHO MOEDA MOLHO MORRO MOTOR MUITO MURAL NADAR NARIZ NIVEL NOBRE NORTE OLHAR ONTEM ORDEM OUVIR PADRE PAPEL PARDO PARTE PASSO PASTA PATIO PAUSA PEDAL PEITO PENTE PERTO PIANO PILHA PINGO PISTA PLUMA POBRE PODER POLVO PONTE PONTO PRATO PRAZO PRETO PRIMO PROVA PULSO QUASE QUEDA RADIO RAPAZ REGRA REINO RELVA RESTO RITMO ROUPA RUIDO SABAO SABER SALTO SAMBA SANTO SAUDE SELVA SENSO SERRA SINAL SOBRA SOGRA SOLAR SORTE SUAVE TABUA TALCO TANGO TECLA TELHA TERRA TEXTO TIGRE TINTA TORTA TOTAL TRAJE TREVO TRIGO TROCA TURMA TURNO UNIAO UNICO USINA VAGAO VALOR VAPOR VELHO VENTO VERAO VIDRO VINHO VIOLA VIRAR VISTA VIUVA VOLTA ZEBRA ABRIL ACASO ACIMA ADEUS AGORA AINDA ALUNO AMBOS AMORA ANDAR ANIMO APOIO ARROZ ATRAS ATUAL AUTOR AVIAO BAIXO BALDE BANHO BARBA BEIJO BICHO BOLHA BRISA BURRO CABRA CALDO CALMA CALOR CANOA CAPIM CARTA CASCA CAUDA CEDRO CERCA CESTA CHEFE CHEIO CHORO CIRCO CISNE COBRA COFRE COLAR COMER CONTA CORDA CORVO COUVE CRAVO CREME CRISE CRUEL CUSTO DANCA DIABO DIZER DRAMA DURAR ENTRE ESTAR EXAME FACIL FARDO FAROL FAVOR FEIRA FEITO FELIZ FIBRA FIRME FLORA FLUXO FOLGA FONTE FUMAR FUNDO FURIA GALHO GANSO GARFO GARRA GENRO GESTO GIRAR GLOBO GORRO GOSTO GRACA GRANA GRAVE GREVE GUIAR HEROI HONRA HORTA HUMOR IDOSO IRMAO JUSTO LABIO LAPIS LAVAR LEGAL LEQUE LEVAR LIMPO LINDO LONGO LOUSA LUTAR MAGIA MALHA MAMAE MANHA MANTO MEDIR MESMO MIOLO MOLDE MORAR MORTE MOSCA MUDAR MUSEU MUSGO NAVIO NINHO NOIVA NOSSO OUTRO PAGAR PALCO PALMA PARAR PEDIR PERNA PESCA PIADA PINHO PIRES PLACA POEMA POETA PORCO POUCO PRADO PRECO PULAR RAIVA RISCO ROCHA RONCO ROSTO SALAO SALSA SECAR SENHA SITIO SOLTO SOPRO SUBIR SURDO TAMPA TECER TEMOR TENIS TENSO TESTE TOCAR TOMAR TOSSE TRAVE TRENO TRIBO VALSA VARAL VENDA VERBO VESPA VIGOR VILAO VISAO VIVER VOGAL VULTO AMIGA BANDA BAILE CHAPA CHUTE COROA CULPA DEVER DUQUE GAITA JUIZO LEITO LENTO MARCO ORGAO PALHA PAPAI PEGAR PRAGA PRESO PUXAR ROLHA SERVO SOLDA TERMO TIRAR TRACO TURBO VAZIO RAIOS SERIA TERNO CLUBE OSTRA").split(/\s+/).filter(function(w){return /^[A-Z]{5}$/.test(w);})));
+
+var $=function(id){return document.getElementById(id);};
+var DEF={games:0,wins:0,streak:0,best:0,dist:[0,0,0,0,0,0],muted:false};
+var mem=null;
+function load(){try{var s=JSON.parse(localStorage.getItem("letrado_stats"));if(s&&s.dist)return s;}catch(e){}return mem||JSON.parse(JSON.stringify(DEF));}
+function save(){mem=st;try{localStorage.setItem("letrado_stats",JSON.stringify(st));}catch(e){}}
+var st=load();
+
+/* som */
+var ac=null;
+function tone(f,d,type,v,delay){if(st.muted)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==="suspended")ac.resume();var t=ac.currentTime+(delay||0),o=ac.createOscillator(),g=ac.createGain();o.type=type||"sine";o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(v||.07,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d+.02);}catch(e){}}
+var sfx={key:function(){tone(520,.05,"triangle",.04);},del:function(){tone(300,.05,"triangle",.04);},
+ flip:function(s,i){tone(s==="c"?660:s==="p"?520:260,.12,"sine",.06,i*.25);},
+ bad:function(){tone(150,.2,"square",.04);},
+ win:function(){[523,659,784,1047].forEach(function(f,i){tone(f,.25,"triangle",.08,i*.11);});},
+ lose:function(){[392,330,262].forEach(function(f,i){tone(f,.3,"sine",.07,i*.15);});},
+ hint:function(){tone(880,.15,"sine",.06);tone(1175,.2,"sine",.06,.1);}};
+
+/* anúncios */
+function adsPlain(){return Array.isArray(window.adsbygoogle)&&window.adsbygoogle.push===Array.prototype.push;}
+function cfgAds(){try{adConfig({preloadAdBreaks:"on",sound:st.muted?"off":"on"});}catch(e){}}
+cfgAds();
+function adNext(cb){if(adsPlain()){cb();return;}var done=false,fin=function(){if(!done){done=true;cb();}};
+ try{adBreak({type:"next",name:"next-word",beforeAd:function(){},afterAd:function(){},adBreakDone:fin});}catch(e){fin();}}
+function adReward(grant){if(adsPlain()){grant();return;}var got=false,g=function(){if(!got){got=true;grant();}};
+ try{adBreak({type:"reward",name:"hint",beforeAd:function(){},afterAd:function(){},
+  beforeReward:function(show){show();},adDismissed:function(){toast("Assista até o fim para ganhar a dica");},adViewed:g,
+  adBreakDone:function(i){if(!got&&i&&i.breakStatus!=="dismissed"&&i.breakStatus!=="viewed")g();}});}catch(e){g();}}
+
+/* estado */
+var ans,row,col,grid,busy,over,hintUsed,hinted,keys;
+var board=$("board"),kbEl=$("kb"),tiles=[],rows=[],keyEls={};
+for(var r=0;r<6;r++){var re=document.createElement("div");re.className="row";tiles.push([]);for(var c=0;c<5;c++){var t=document.createElement("div");t.className="tile";re.appendChild(t);tiles[r].push(t);}board.appendChild(re);rows.push(re);}
+["QWERTYUIOP","ASDFGHJKL","<ZXCVBNM>"].forEach(function(line){var kr=document.createElement("div");kr.className="kr";
+ line.split("").forEach(function(ch){var b=document.createElement("button");b.className="k";
+  if(ch==="<"){b.textContent="ENTER";b.classList.add("w");b.dataset.k="ENTER";}
+  else if(ch===">"){b.textContent="⌫";b.classList.add("w");b.dataset.k="BACK";b.setAttribute("aria-label","Apagar");}
+  else{b.textContent=ch;b.dataset.k=ch;keyEls[ch]=b;}
+  kr.appendChild(b);});kbEl.appendChild(kr);});
+kbEl.addEventListener("click",function(e){var b=e.target.closest(".k");if(b){b.blur();press(b.dataset.k);}});
+document.addEventListener("keydown",function(e){if(!$("game").classList.contains("on")||$("end").classList.contains("on")||e.ctrlKey||e.metaKey||e.altKey)return;
+ var k=e.key;if(k==="Enter"){e.preventDefault();press("ENTER");}else if(k==="Backspace"){e.preventDefault();press("BACK");}else if(/^[a-zA-Z]$/.test(k))press(k.toUpperCase());});
+
+function newRound(){var prev=ans;do{ans=WORDS[Math.floor(Math.random()*WORDS.length)];}while(ans===prev&&WORDS.length>1);
+ row=0;col=0;busy=false;over=false;hintUsed=false;hinted={};keys={};grid=[];
+ for(var r=0;r<6;r++){grid.push(["","","","",""]);rows[r].className="row";for(var c=0;c<5;c++){tiles[r][c].className="tile";tiles[r][c].textContent="";}}
+ for(var k in keyEls)keyEls[k].className="k";
+ $("hintBtn").disabled=false;renderHints();$("gStreak").textContent=st.streak;}
+function renderHints(){var h=$("hints");h.innerHTML="";for(var i=0;i<5;i++){var s=document.createElement("span");if(hinted[i]){s.textContent=ans[i];s.className="got";}else s.textContent=i+1;h.appendChild(s);}}
+
+function press(k){if(busy||over)return;
+ if(k==="ENTER")return submit();
+ if(k==="BACK"){if(col>0){col--;grid[row][col]="";var t=tiles[row][col];t.textContent="";t.className="tile";sfx.del();}return;}
+ if(col<5){grid[row][col]=k;var t2=tiles[row][col];t2.textContent=k;t2.className="tile filled";col++;sfx.key();}}
+
+function score(g){var res=["a","a","a","a","a"],cnt={},i;
+ for(i=0;i<5;i++){if(g[i]===ans[i])res[i]="c";else cnt[ans[i]]=(cnt[ans[i]]||0)+1;}
+ for(i=0;i<5;i++){if(res[i]!=="c"&&cnt[g[i]]>0){res[i]="p";cnt[g[i]]--;}}return res;}
+var RANK={a:1,p:2,c:3};
+function submit(){if(col<5){toast("Faltam letras");sfx.bad();var re=rows[row];re.classList.remove("shake");void re.offsetWidth;re.classList.add("shake");return;}
+ var g=grid[row].join(""),res=score(g),r=row;busy=true;
+ res.forEach(function(s,i){var t=tiles[r][i];setTimeout(function(){t.classList.add("flip");sfx.flip(s,0);setTimeout(function(){t.classList.add(s);},250);},i*250);});
+ setTimeout(function(){
+  res.forEach(function(s,i){var L=g[i];if(!keys[L]||RANK[s]>RANK[keys[L]]){keys[L]=s;keyEls[L].className="k "+s;}});
+  busy=false;
+  if(g===ans){over=true;tiles[r].forEach(function(t,i){setTimeout(function(){t.classList.remove("flip");t.classList.add("win");},i*90);});finish(true,r);}
+  else if(r===5){over=true;finish(false,r);}
+  else{row++;col=0;}
+ },5*250+300);}
+
+function finish(won,r){st.games++;if(won){st.wins++;st.streak++;st.best=Math.max(st.best,st.streak);st.dist[r]++;}else st.streak=0;save();
+ $("gStreak").textContent=st.streak;
+ if(won){sfx.win();confetti();toast(["Genial!","Magnífico!","Impressionante!","Esplêndido!","Muito bem!","Ufa!"][r]);}
+ else{sfx.lose();toast(ans);}
+ setTimeout(function(){showEnd(won,r);},won?1300:1500);}
+function fillStats(p){$(p+"Games").textContent=st.games;$(p+"Pct").textContent=st.games?Math.round(st.wins/st.games*100):0;$(p+"Streak").textContent=st.streak;$(p+"Best").textContent=st.best;}
+function showEnd(won,r){$("endTitle").textContent=won?"Parabéns!":"Não foi dessa vez";
+ $("endSub").textContent=won?"Você acertou em "+(r+1)+(r?" tentativas":" tentativa"):"A palavra era";
+ var w=$("endWord");w.textContent=ans;w.className="word"+(won?"":" lose");fillStats("e");
+ var d=$("dist"),mx=Math.max.apply(null,st.dist.concat([1]));d.innerHTML="";
+ st.dist.forEach(function(n,i){var line=document.createElement("div"),lab=document.createElement("i"),bar=document.createElement("span");
+  lab.textContent=i+1;bar.textContent=n;bar.style.width=Math.max(8,n/mx*100)+"%";if(won&&i===r)bar.className="cur";line.appendChild(lab);line.appendChild(bar);d.appendChild(line);});
+ $("end").classList.add("on");}
+
+$("nextBtn").addEventListener("click",function(){var b=this;b.disabled=true;adNext(function(){b.disabled=false;$("end").classList.remove("on");newRound();});});
+$("hintBtn").addEventListener("click",function(){if(hintUsed||over||busy)return;
+ var known={};for(var r=0;r<row;r++)for(var i=0;i<5;i++)if(tiles[r][i].classList.contains("c"))known[i]=1;
+ var opts=[];for(var j=0;j<5;j++)if(!known[j]&&!hinted[j])opts.push(j);
+ if(!opts.length){toast("Você já sabe todas as letras!");return;}
+ adReward(function(){if(hintUsed||over)return;hintUsed=true;var p=opts[Math.floor(Math.random()*opts.length)];hinted[p]=1;renderHints();
+  $("hintBtn").disabled=true;sfx.hint();toast("Letra "+(p+1)+": "+ans[p]);
+  var L=ans[p];if(keys[L]!=="c"){keys[L]="c";keyEls[L].className="k c";}});});
+
+var tt;function toast(m){var t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(function(){t.classList.remove("on");},1600);}
+function confetti(){var cols=["#13a38a","#e0a526","#eef4f3","#3fd1b4","#f2c55c"];
+ for(var i=0;i<70;i++){var c=document.createElement("div");c.className="cf";c.style.left=Math.random()*100+"vw";c.style.background=cols[i%cols.length];
+  c.style.animationDuration=(1.6+Math.random()*1.6)+"s";c.style.animationDelay=(Math.random()*.4)+"s";c.style.borderRadius=Math.random()<.5?"50%":"2px";
+  document.body.appendChild(c);(function(el){setTimeout(function(){el.remove();},3800);})(c);}}
+
+function soundUI(){$("soundBtn1").textContent=st.muted?"🔇 Som desligado":"🔊 Som ligado";$("soundBtn2").textContent=st.muted?"🔇":"🔊";}
+function toggleSound(){st.muted=!st.muted;save();soundUI();cfgAds();if(!st.muted)tone(660,.1,"sine",.06);}
+$("soundBtn1").addEventListener("click",toggleSound);$("soundBtn2").addEventListener("click",toggleSound);
+function show(id){["start","game"].forEach(function(s){$(s).classList.toggle("on",s===id);});}
+$("playBtn").addEventListener("click",function(){show("game");if(!ans||over)newRound();tone(523,.08,"triangle",.05);});
+$("homeBtn").addEventListener("click",function(){fillStats("s");show("start");});
+document.addEventListener("dblclick",function(e){e.preventDefault();},{passive:false});
+fillStats("s");soundUI();
+})();
+</script>
+</body>
+</html>

@@ -1,339 +1,41 @@
-<!doctype html>
-<html lang="pt-BR">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#1b1033" />
-    <title>EMPILHA — Jogo H5</title>
-    <!--
-      ANÚNCIOS H5 (AdSense for Games): para ativar, descomente a tag abaixo e
-      troque ca-pub-XXXXXXXXXXXXXXXX pelo seu ID de editor. Em produção, remova
-      data-adbreak-test="on". O jogo já chama adConfig(), adBreak type "next"
-      (reinício) e type "reward" (continuar). Sem a biblioteca, tudo funciona
-      normalmente com os callbacks locais.
-    -->
-    <!-- <script async data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-adbreak-test="on" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
-    <script>
-      window.adsbygoogle = window.adsbygoogle || [];
-      var adBreak = (adConfig = function (o) {
-        adsbygoogle.push(o);
-      });
-    </script>
-    <style>
-      *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-      html,body{width:100%;height:100%;overflow:hidden;background:#1b1033;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#fff}
-      canvas{display:block;position:fixed;inset:0}
-      .ui{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:14px}
-      .ui.hide{display:none}
-      #start,#over,#pause{background:rgba(14,8,30,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-      h1{font-size:clamp(44px,14vw,86px);letter-spacing:.14em;font-weight:800;text-shadow:0 6px 24px rgba(0,0,0,.45)}
-      .sub{font-size:15px;line-height:1.5;opacity:.85;max-width:20em}
-      .best{font-size:13px;letter-spacing:.14em;text-transform:uppercase;opacity:.7}
-      button{font:600 16px/1 system-ui,sans-serif;color:#1b1033;background:#ffd79b;border:0;border-radius:999px;min-height:52px;min-width:190px;padding:0 26px;cursor:pointer;letter-spacing:.06em;transition:transform .12s ease,filter .12s ease}
-      button:active{transform:scale(.96)}
-      button.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45)}
-      button.small{min-width:0;min-height:44px;font-size:14px;padding:0 18px}
-      .copy{position:fixed;bottom:14px;left:0;right:0;font-size:11px;opacity:.5;letter-spacing:.06em}
-      #hud{pointer-events:none;display:block;padding:0}
-      #score{position:absolute;top:max(14px,env(safe-area-inset-top));left:0;right:0;text-align:center;font-size:clamp(46px,13vw,76px);font-weight:800;text-shadow:0 4px 18px rgba(0,0,0,.4)}
-      #hbest{position:absolute;top:calc(max(14px,env(safe-area-inset-top)) + 8px);left:16px;font-size:12px;letter-spacing:.12em;opacity:.75}
-      #pauseBtn{position:absolute;top:max(10px,env(safe-area-inset-top));right:12px;pointer-events:auto;width:44px;height:44px;min-width:44px;border-radius:14px;background:#1b1033;color:#fff;border:1px solid rgba(255,255,255,.4);font-size:15px}
-      #msg{position:absolute;left:0;right:0;top:34%;text-align:center;font-size:26px;font-weight:800;letter-spacing:.08em;color:#ffe6a8;opacity:0;transition:opacity .2s}
-      .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-      .big{font-size:60px;font-weight:800;line-height:1}
-      .lbl{font-size:12px;letter-spacing:.18em;text-transform:uppercase;opacity:.7}
-      #rec{color:#ffd79b;font-weight:800;letter-spacing:.1em}
-      .hidden{display:none!important}
-    </style>
-  </head>
-  <body>
-    <canvas id="c"></canvas>
-
-    <div class="ui" id="hud" style="display:none">
-      <div id="hbest">RECORDE 0</div>
-      <div id="score">0</div>
-      <button id="pauseBtn" aria-label="Pausar">❚❚</button>
-      <div id="msg"></div>
-    </div>
-
-    <div class="ui" id="start">
-      <h1>EMPILHA</h1>
-      <p class="sub">Toque para soltar o bloco. Empilhe o mais alto que conseguir.</p>
-      <p class="best" id="sbest">RECORDE 0</p>
-      <button id="playBtn">JOGAR</button>
-      <button id="sndBtn" class="ghost small">SOM: LIGADO</button>
-      <p class="copy">© 2026 Órbita Jogos</p>
-    </div>
-
-    <div class="ui hide" id="pause">
-      <h1 style="font-size:40px">PAUSADO</h1>
-      <button id="resumeBtn">CONTINUAR</button>
-      <button id="quitBtn" class="ghost small">SAIR</button>
-    </div>
-
-    <div class="ui hide" id="over">
-      <p class="lbl">Fim de jogo</p>
-      <p class="big" id="oscore">0</p>
-      <p class="best" id="obest">RECORDE 0</p>
-      <p id="rec" class="hidden">NOVO RECORDE!</p>
-      <div class="row">
-        <button id="contBtn">CONTINUAR (assistir anúncio)</button>
-        <button id="againBtn" class="ghost">JOGAR DE NOVO</button>
-      </div>
-      <p class="copy">© 2026 Órbita Jogos</p>
-    </div>
-
-    <script>
-      (function () {
-        var cv = document.getElementById("c"), ctx = cv.getContext("2d");
-        var W = 0, H = 0, BH = 30;
-        function resize() {
-          var dpr = Math.min(window.devicePixelRatio || 1, 3);
-          W = window.innerWidth; H = window.innerHeight;
-          cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-          cv.style.width = W + "px"; cv.style.height = H + "px";
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-          BH = Math.max(22, Math.min(34, H * 0.042));
-        }
-        resize(); addEventListener("resize", resize);
-
-        /* ---- armazenamento ---- */
-        var mem = {};
-        function get(k, d) { try { var v = localStorage.getItem(k); return v === null ? (mem[k] !== undefined ? mem[k] : d) : v; } catch (e) { return mem[k] !== undefined ? mem[k] : d; } }
-        function set(k, v) { mem[k] = v; try { localStorage.setItem(k, v); } catch (e) {} }
-        var best = parseInt(get("empilha.best", "0"), 10) || 0;
-        var muted = get("empilha.mute", "0") === "1";
-
-        /* ---- áudio ---- */
-        var AC = window.AudioContext || window.webkitAudioContext, actx = null;
-        function ac() { if (!actx && AC) { try { actx = new AC(); } catch (e) {} } if (actx && actx.state === "suspended") actx.resume(); return actx; }
-        function tone(f, f2, dur, type, vol) {
-          if (muted) return; var a = ac(); if (!a) return;
-          var o = a.createOscillator(), g = a.createGain(), t = a.currentTime;
-          o.type = type || "sine"; o.frequency.setValueAtTime(f, t);
-          if (f2) o.frequency.exponentialRampToValueAtTime(Math.max(30, f2), t + dur);
-          g.gain.setValueAtTime(0.0001, t);
-          g.gain.exponentialRampToValueAtTime(vol || 0.22, t + 0.012);
-          g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-          o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + 0.03);
-        }
-        function sThud() { tone(180, 70, 0.16, "square", 0.18); }
-        function sSlice() { tone(900, 300, 0.1, "sawtooth", 0.07); }
-        function sPerfect(c) { var b = 620 * Math.pow(1.07, Math.min(c, 12)); tone(b, b * 2, 0.22, "triangle", 0.2); setTimeout(function () { tone(b * 1.5, b * 2.2, 0.2, "sine", 0.14); }, 70); }
-        function sOver() { tone(300, 70, 0.7, "sawtooth", 0.2); }
-
-        /* ---- anúncios ---- */
-        function adsReal() { return !(window.adsbygoogle instanceof Array); }
-        try { adConfig({ preloadAdBreaks: "on", sound: muted ? "off" : "on" }); } catch (e) {}
-        function adRestart(done) {
-          if (!adsReal()) { done(); return; }
-          try { adBreak({ type: "next", name: "restart-game", adBreakDone: done }); } catch (e) { done(); }
-        }
-        function adReward(onReward, onDone) {
-          if (!adsReal()) { onReward(); onDone && onDone(); return; }
-          try {
-            adBreak({ type: "reward", name: "continue-run",
-              beforeReward: function (show) { show(); },
-              adViewed: onReward, adDismissed: function () {}, adBreakDone: function () { onDone && onDone(); } });
-          } catch (e) { onReward(); onDone && onDone(); }
-        }
-
-        /* ---- estado ---- */
-        var S = { START: 0, PLAY: 1, FALL: 2, OVER: 3, PAUSE: 4 }, state = S.START;
-        var blocks = [], moving = null, slices = [], parts = [], confs = [];
-        var score = 0, combo = 0, cam = 0, camT = 0, shake = 0, baseW = 260, usedCont = false, overT = 0;
-
-        var el = {
-          hud: document.getElementById("hud"), start: document.getElementById("start"),
-          over: document.getElementById("over"), pause: document.getElementById("pause"),
-          score: document.getElementById("score"), hbest: document.getElementById("hbest"),
-          sbest: document.getElementById("sbest"), obest: document.getElementById("obest"),
-          oscore: document.getElementById("oscore"), rec: document.getElementById("rec"),
-          msg: document.getElementById("msg"), snd: document.getElementById("sndBtn"),
-          cont: document.getElementById("contBtn")
-        };
-        function bestTxt() { el.sbest.textContent = el.hbest.textContent = el.obest.textContent = "RECORDE " + best; }
-        function sndTxt() { el.snd.textContent = "SOM: " + (muted ? "DESLIGADO" : "LIGADO"); }
-        bestTxt(); sndTxt();
-
-        function hue(i) { return (24 + i * 9) % 360; }
-        function newMoving() {
-          var top = blocks[blocks.length - 1], i = blocks.length;
-          var dir = i % 2 === 0 ? 1 : -1;
-          moving = { x: dir > 0 ? 0 : W - top.w, w: top.w, i: i, dir: dir, h: hue(i) };
-        }
-        function speed() {
-          return (210 + score * 9 > 660 ? 660 : 210 + score * 9) * Math.max(0.75, Math.min(1.7, W / 420));
-        }
-        function start() {
-          baseW = Math.min(W * 0.62, 280);
-          blocks = [{ x: (W - baseW) / 2, w: baseW, i: 0, h: hue(0) }];
-          slices = []; parts = []; confs = [];
-          score = 0; combo = 0; usedCont = false; shake = 0;
-          cam = camT = H * 0.68; el.score.textContent = "0";
-          el.cont.classList.remove("hidden");
-          newMoving(); show(S.PLAY);
-        }
-        function show(s) {
-          state = s;
-          el.start.classList.toggle("hide", s !== S.START);
-          el.over.classList.toggle("hide", s !== S.OVER);
-          el.pause.classList.toggle("hide", s !== S.PAUSE);
-          el.hud.style.display = s === S.PLAY || s === S.FALL || s === S.PAUSE ? "block" : "none";
-        }
-        function flash(t) { el.msg.textContent = t; el.msg.style.opacity = 1; setTimeout(function () { el.msg.style.opacity = 0; }, 520); }
-
-        function burst(x, y, n, col) {
-          for (var i = 0; i < n; i++)
-            parts.push({ x: x, y: y, vx: (Math.random() - 0.5) * 320, vy: -Math.random() * 300 - 40, life: 0.7 + Math.random() * 0.4, t: 0, c: col, s: 2 + Math.random() * 4 });
-        }
-        function confetti() {
-          for (var i = 0; i < 90; i++)
-            confs.push({ x: Math.random() * W, y: -20 - Math.random() * H * 0.6, vx: (Math.random() - 0.5) * 90, vy: 90 + Math.random() * 190, r: Math.random() * 6.283, vr: (Math.random() - 0.5) * 8, w: 5 + Math.random() * 7, h: 7 + Math.random() * 8, c: "hsl(" + Math.floor(Math.random() * 360) + ",85%,65%)" });
-        }
-
-        function drop() {
-          if (state !== S.PLAY || !moving) return;
-          var top = blocks[blocks.length - 1], d = moving.x - top.x, ad = Math.abs(d);
-          if (ad >= top.w) {
-            slices.push({ x: moving.x, y: -moving.i * BH, w: moving.w, h: BH, vx: moving.dir * 60, vy: -40, r: 0, vr: (Math.random() - 0.5) * 6, hu: moving.h });
-            moving = null; shake = 1; sOver(); state = S.FALL; overT = 0; combo = 0;
-            return;
-          }
-          if (ad <= 4) {
-            combo++;
-            moving.x = top.x; moving.w = top.w;
-            if (combo % 5 === 0) { var g = Math.min(10, baseW - moving.w); if (g > 0) { moving.w += g; moving.x -= g / 2; } }
-            burst(moving.x + moving.w / 2, -moving.i * BH + cam, 18, "hsl(44,100%,70%)");
-            sPerfect(combo); flash(combo > 1 ? "PERFEITO! x" + combo : "PERFEITO!");
-          } else {
-            combo = 0;
-            var nw = top.w - ad, nx = d > 0 ? moving.x : top.x;
-            var sx = d > 0 ? top.x + top.w : moving.x;
-            slices.push({ x: sx, y: -moving.i * BH, w: ad, h: BH, vx: d > 0 ? 160 : -160, r: 0, vr: (Math.random() - 0.5) * 7, vy: -30, hu: moving.h });
-            moving.x = nx; moving.w = nw; sSlice(); sThud();
-          }
-          blocks.push({ x: moving.x, w: moving.w, i: moving.i, h: moving.h });
-          score++; el.score.textContent = score;
-          camT = H * 0.68 + (blocks.length - 1) * BH;
-          newMoving();
-        }
-        function gameOver() {
-          var r = score > best;
-          if (r) { best = score; set("empilha.best", String(best)); confetti(); }
-          bestTxt();
-          el.oscore.textContent = score;
-          el.rec.classList.toggle("hidden", !r);
-          show(S.OVER);
-        }
-        function revive() {
-          slices = []; moving = null; shake = 0;
-          el.cont.classList.add("hidden");
-          newMoving(); show(S.PLAY);
-        }
-
-        /* ---- entrada ---- */
-        cv.addEventListener("pointerdown", function (e) { e.preventDefault(); ac(); drop(); });
-        addEventListener("keydown", function (e) {
-          if (e.code === "Space" || e.code === "ArrowDown") { e.preventDefault(); ac(); if (state === S.START) start(); else drop(); }
-          else if (e.code === "Escape" && state === S.PLAY) show(S.PAUSE);
-        });
-        addEventListener("contextmenu", function (e) { e.preventDefault(); });
-        document.addEventListener("visibilitychange", function () { if (document.hidden && state === S.PLAY) show(S.PAUSE); });
-        document.getElementById("playBtn").onclick = function () { ac(); start(); };
-        el.snd.onclick = function () {
-          muted = !muted; set("empilha.mute", muted ? "1" : "0"); sndTxt();
-          try { adConfig({ preloadAdBreaks: "on", sound: muted ? "off" : "on" }); } catch (e) {}
-          if (!muted) tone(660, 880, 0.12, "sine", 0.15);
-        };
-        document.getElementById("pauseBtn").onclick = function (e) { e.stopPropagation(); if (state === S.PLAY) show(S.PAUSE); };
-        document.getElementById("resumeBtn").onclick = function () { if (state === S.PAUSE) show(S.PLAY); };
-        document.getElementById("quitBtn").onclick = function () { show(S.START); };
-        document.getElementById("againBtn").onclick = function () { adRestart(start); };
-        el.cont.onclick = function () { el.cont.classList.add("hidden"); adReward(revive); };
-
-        /* ---- desenho ---- */
-        function mix(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
-        function rgb(c) { return "rgb(" + (c[0] | 0) + "," + (c[1] | 0) + "," + (c[2] | 0) + ")"; }
-        function sky() {
-          var t = Math.min(1, blocks.length / 45);
-          var top1 = mix([255, 150, 96], [18, 14, 48], t), top2 = mix([120, 70, 150], [8, 6, 26], t);
-          var g = ctx.createLinearGradient(0, 0, 0, H);
-          g.addColorStop(0, rgb(top2)); g.addColorStop(0.55, rgb(top1));
-          g.addColorStop(1, rgb(mix([255, 214, 160], [40, 22, 70], t)));
-          ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-          ctx.globalAlpha = t * 0.9;
-          for (var i = 0; i < 40; i++) {
-            var sx = ((i * 97.13) % W), sy = ((i * 53.7) % (H * 0.7));
-            ctx.fillStyle = "#fff"; ctx.fillRect(sx, sy, 1.6, 1.6);
-          }
-          ctx.globalAlpha = 1;
-        }
-        function block(x, y, w, h, hu, a) {
-          var g = ctx.createLinearGradient(x, y, x + w, y + h);
-          g.addColorStop(0, "hsl(" + hu + ",72%,64%)");
-          g.addColorStop(1, "hsl(" + ((hu + 28) % 360) + ",62%,44%)");
-          ctx.globalAlpha = a === undefined ? 1 : a;
-          ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
-          ctx.fillStyle = "hsla(" + hu + ",85%,82%,.55)"; ctx.fillRect(x, y, w, Math.min(5, h * 0.22));
-          ctx.fillStyle = "rgba(0,0,0,.18)"; ctx.fillRect(x, y + h - 3, w, 3);
-          ctx.globalAlpha = 1;
-        }
-
-        var last = 0;
-        function loop(ts) {
-          requestAnimationFrame(loop);
-          var dt = Math.min(0.05, (ts - last) / 1000 || 0); last = ts;
-          if (state === S.PLAY && moving) {
-            var sp = speed() * moving.dir;
-            moving.x += sp * dt;
-            if (moving.x < 0) { moving.x = 0; moving.dir = 1; }
-            if (moving.x + moving.w > W) { moving.x = W - moving.w; moving.dir = -1; }
-          }
-          cam += (camT - cam) * Math.min(1, dt * 6);
-          if (shake > 0) shake = Math.max(0, shake - dt * 2.4);
-          for (var i = slices.length - 1; i >= 0; i--) {
-            var s = slices[i]; s.vy += 1500 * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.r += s.vr * dt;
-            if (s.y + cam > H + 200) slices.splice(i, 1);
-          }
-          for (var j = parts.length - 1; j >= 0; j--) {
-            var p = parts[j]; p.t += dt; p.vy += 820 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
-            if (p.t > p.life) parts.splice(j, 1);
-          }
-          for (var k = confs.length - 1; k >= 0; k--) {
-            var cf = confs[k]; cf.x += cf.vx * dt; cf.y += cf.vy * dt; cf.r += cf.vr * dt;
-            if (cf.y > H + 40) confs.splice(k, 1);
-          }
-          if (state === S.FALL) { overT += dt; if (overT > 0.75) gameOver(); }
-
-          sky();
-          ctx.save();
-          var sh = shake * 10;
-          ctx.translate(sh ? (Math.random() - 0.5) * sh : 0, cam + (sh ? (Math.random() - 0.5) * sh : 0));
-          var vis = Math.ceil(H / BH) + 3;
-          for (var b = Math.max(0, blocks.length - vis); b < blocks.length; b++) {
-            var bl = blocks[b];
-            block(bl.x, -bl.i * BH, bl.w, BH - 1, bl.h);
-          }
-          for (var m = 0; m < slices.length; m++) {
-            var sl = slices[m];
-            ctx.save(); ctx.translate(sl.x + sl.w / 2, sl.y + sl.h / 2); ctx.rotate(sl.r);
-            block(-sl.w / 2, -sl.h / 2, sl.w, sl.h, sl.hu, 0.92); ctx.restore();
-          }
-          if (moving) block(moving.x, -moving.i * BH, moving.w, BH - 1, moving.h);
-          ctx.restore();
-          for (var q = 0; q < parts.length; q++) {
-            var pp = parts[q]; ctx.globalAlpha = Math.max(0, 1 - pp.t / pp.life);
-            ctx.fillStyle = pp.c; ctx.fillRect(pp.x, pp.y, pp.s, pp.s);
-          }
-          ctx.globalAlpha = 1;
-          for (var z = 0; z < confs.length; z++) {
-            var c2 = confs[z]; ctx.save(); ctx.translate(c2.x, c2.y); ctx.rotate(c2.r);
-            ctx.fillStyle = c2.c; ctx.fillRect(-c2.w / 2, -c2.h / 2, c2.w, c2.h); ctx.restore();
-          }
-        }
-        requestAnimationFrame(loop);
-      })();
-    </script>
-  </body>
-</html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Empilha – Jogue grátis online | Órbita Jogos</title><meta name="description" content="Jogue Empilha grátis: solte o bloco na hora certa e construa a torre mais alta. Acerte o PERFEITO! para não perder tamanho. Online, sem baixar."><link rel="canonical" href="https://mercadolivrestz123-hue.github.io/jogos/empilha/">
+<meta property="og:type" content="website"><meta property="og:title" content="Empilha – jogue grátis"><meta property="og:description" content="Jogue Empilha grátis: solte o bloco na hora certa e construa a torre mais alta. Acerte o PERFEITO! para não perder tamanho. Online, sem baixar."><meta property="og:url" content="https://mercadolivrestz123-hue.github.io/jogos/empilha/"><meta property="og:locale" content="pt_BR"><meta name="theme-color" content="#070b1f">
+<!-- AdSense: cole aqui a tag de verificação/auto ads quando tiver o ID ca-pub. -->
+<script type="application/ld+json">[{"@context": "https://schema.org", "@type": "VideoGame", "name": "Empilha", "url": "https://mercadolivrestz123-hue.github.io/jogos/empilha/", "description": "Jogue Empilha grátis: solte o bloco na hora certa e construa a torre mais alta. Acerte o PERFEITO! para não perder tamanho. Online, sem baixar.", "genre": "Arcade de timing", "inLanguage": "pt-BR", "gamePlatform": ["Navegador", "Celular", "Computador"], "applicationCategory": "Game", "operatingSystem": "Qualquer (navegador)", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "BRL"}, "publisher": {"@type": "Organization", "name": "Órbita Jogos", "url": "https://mercadolivrestz123-hue.github.io/"}}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Empilha é grátis?", "acceptedAnswer": {"@type": "Answer", "text": "Sim, grátis e sem cadastro."}}, {"@type": "Question", "name": "Tem fim?", "acceptedAnswer": {"@type": "Answer", "text": "Não. A torre sobe até você errar, e o objetivo é bater seu recorde."}}, {"@type": "Question", "name": "Posso jogar offline?", "acceptedAnswer": {"@type": "Answer", "text": "Depois de carregar a página, o jogo roda sem precisar de internet até você fechar a aba."}}]}, {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Jogos", "item": "https://mercadolivrestz123-hue.github.io/"}, {"@type": "ListItem", "position": 2, "name": "Empilha", "item": "https://mercadolivrestz123-hue.github.io/jogos/empilha/"}]}]</script>
+<style>*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#070b1f;color:#e8ecff;line-height:1.65}
+a{color:#4fe3ff}header{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid #1c2350;flex-wrap:wrap;gap:8px}
+.logo{font-weight:800;font-size:20px;letter-spacing:2px;color:#fff;text-decoration:none}.logo span{color:#ff4fd8}
+nav a{margin-left:16px;text-decoration:none;color:#c9d2ff}nav a:hover{color:#4fe3ff}
+main{max-width:980px;margin:0 auto;padding:20px 16px 32px}.crumb{font-size:14px;color:#9aa4d6}.crumb a{color:#9aa4d6}
+h1{font-size:30px;margin:6px 0 4px}.tag{display:inline-block;font-size:13px;color:#050818;background:var(--c);border-radius:999px;padding:2px 10px;font-weight:700}
+.player{position:relative;width:100%;height:min(78vh,640px);border-radius:16px;overflow:hidden;border:1px solid #243070;background:#050818;margin:16px 0 8px}
+.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}.b{background:#121a45;border:1px solid #2d3a85;color:#e8ecff;border-radius:999px;padding:8px 16px;font-size:15px;cursor:pointer;text-decoration:none}
+.b:hover{border-color:#4fe3ff}h2{margin-top:30px;font-size:23px}li{margin:4px 0}
+.faq dt{font-weight:700;margin-top:12px}.faq dd{margin:2px 0 0 0;color:#c9d2ff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-top:12px}
+.card{background:linear-gradient(160deg,#121a45,#0b1030);border:1px solid #243070;border-radius:14px;padding:14px 16px;text-decoration:none;color:inherit}.card:hover{border-color:#4fe3ff}.card b{display:block;font-size:17px}.card span{font-size:14px;color:#9aa4d6}
+footer{text-align:center;padding:26px;color:#8b95c9;font-size:14px;border-top:1px solid #1c2350;margin-top:36px}footer a{margin:0 8px;color:#8b95c9}
+@media(max-width:600px){.player{height:82vh;border-radius:10px}h1{font-size:25px}nav a{margin-left:12px}}</style></head><body style="--c:#ff7a59">
+<header><a class="logo" href="../../">ÓRBITA<span>JOGOS</span></a><nav><a href="../../">Jogos</a><a href="../../blog/">Blog</a><a href="../../sobre.html">Sobre</a><a href="../../contato.html">Contato</a></nav></header>
+<main>
+<div class="crumb"><a href="../../">Jogos</a> › Empilha</div>
+<h1>Empilha</h1><span class="tag">Arcade de timing</span> <span class="crumb">Grátis · sem cadastro · celular e PC</span>
+<div class="player" id="player"><iframe id="game" src="jogar.html" title="Jogar Empilha" allow="autoplay; fullscreen" allowfullscreen loading="eager"></iframe></div>
+<div class="bar"><button class="b" id="fs">⛶ Tela cheia</button><a class="b" href="jogar.html">Abrir só o jogo</a></div>
+<p>Empilha é um jogo de timing puro. Um bloco desliza de um lado para o outro e você toca para soltá-lo sobre a torre. A parte que sobrar para fora é cortada, então cada erro deixa o próximo bloco menor e a partida mais difícil.</p>
+<h2>Como jogar Empilha</h2><ol><li>Toque na tela para soltar o bloco que está se movendo.</li><li>O pedaço que ficar para fora da torre cai e o bloco seguinte nasce menor.</li><li>Encaixe exatamente em cima para ganhar um PERFEITO! e manter o tamanho.</li><li>A partida acaba quando você erra o bloco por completo.</li></ol>
+<h2>Controles</h2><p>Celular: toque. Computador: clique ou espaço. Use o botão de pausa no topo para parar.</p>
+<h2>Dicas</h2><ul><li>Toque pelo ritmo, não pela imagem: conte mentalmente o vai e volta do bloco.</li><li>Depois de um erro, respire. O bloco menor é mais fácil de errar de novo por ansiedade.</li><li>Sequências de PERFEITO! valem mais do que altura rápida.</li><li>Jogue com o som ligado: o efeito ajuda a pegar o tempo.</li></ul>
+<h2>Perguntas frequentes</h2><dl class="faq"><dt>Empilha é grátis?</dt><dd>Sim, grátis e sem cadastro.</dd><dt>Tem fim?</dt><dd>Não. A torre sobe até você errar, e o objetivo é bater seu recorde.</dd><dt>Posso jogar offline?</dt><dd>Depois de carregar a página, o jogo roda sem precisar de internet até você fechar a aba.</dd></dl>
+<h2>Outros jogos</h2><div class="grid"><a class="card" href="../frutopia/"><b>Frutopia</b><span>Puzzle de juntar frutas</span></a><a class="card" href="../blocos/"><b>Blocos</b><span>Puzzle de encaixe</span></a><a class="card" href="../ordena-cores/"><b>Ordena Cores</b><span>Puzzle de ordenar</span></a><a class="card" href="../capivara-run/"><b>Capivara Run</b><span>Corrida infinita</span></a></div>
+</main>
+<footer>© 2026 Órbita Jogos · <a href="../../sobre.html">Sobre</a><a href="../../contato.html">Contato</a><a href="../../privacidade.html">Política de Privacidade</a><a href="../../termos.html">Termos de Uso</a></footer>
+<script>
+var p=document.getElementById('player'),f=document.getElementById('game');
+document.getElementById('fs').onclick=function(){var r=p.requestFullscreen||p.webkitRequestFullscreen;if(r){r.call(p)}else{location.href='jogar.html'}};
+f.addEventListener('load',function(){try{f.contentWindow.focus()}catch(x){}});
+p.addEventListener('pointerdown',function(){try{f.contentWindow.focus()}catch(x){}});
+</script>
+</body></html>
